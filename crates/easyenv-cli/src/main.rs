@@ -27,6 +27,8 @@ enum Commands {
     List(ListArgs),
     #[command(alias = "run")]
     Exec(ExecArgs),
+    #[command(visible_alias = "walktrough")]
+    Walkthrough(WalkthroughArgs),
     Push(PushArgs),
     Pull(PullArgs),
     Workspace(WorkspaceArgs),
@@ -86,6 +88,12 @@ struct ExecArgs {
     profile: String,
     #[arg(required = true, trailing_var_arg = true, allow_hyphen_values = true, num_args = 1.., value_hint = ValueHint::CommandWithArguments)]
     command: Vec<String>,
+}
+
+#[derive(Args, Debug)]
+struct WalkthroughArgs {
+    #[arg(long, default_value = "default")]
+    profile: String,
 }
 
 #[derive(Args, Debug)]
@@ -222,6 +230,14 @@ fn main() -> Result<()> {
             let status = run_command(&args.command, &secrets)?;
             drop(secrets);
             std::process::exit(status);
+        }
+        Commands::Walkthrough(args) => {
+            let active_project = app.active_project(&cwd)?;
+            let visible_count = app
+                .list_secrets(&cwd, None, &args.profile)
+                .ok()
+                .map(|v| v.len());
+            print_walkthrough(&cwd, active_project.as_ref(), visible_count, &args.profile);
         }
         Commands::Push(args) => {
             let keys = parse_keys(&args.key)?;
@@ -436,6 +452,83 @@ fn print_workspace(
         println!("share format: age x25519 armored bundle");
     }
     Ok(())
+}
+
+fn print_walkthrough(
+    cwd: &std::path::Path,
+    active_project: Option<&easyenv_core::ProjectRecord>,
+    visible_count: Option<usize>,
+    profile: &str,
+) {
+    println!("easyenv walkthrough");
+    println!("===================");
+    println!();
+    println!("Current directory: {}", cwd.display());
+    match active_project {
+        Some(project) => {
+            println!("Active project:   {}", project.root_path.display());
+            println!("Project status:   initialized");
+        }
+        None => {
+            println!("Active project:   none");
+            println!("Project status:   not initialized here yet");
+        }
+    }
+    match visible_count {
+        Some(count) => println!("Visible vars:     {} (profile: {})", count, profile),
+        None => {
+            println!("Visible vars:     unavailable (run `easyenv doctor` if storage is failing)")
+        }
+    }
+    println!();
+    println!("Step 1: initialize a project");
+    println!(
+        "  Run this inside a repo so plain `easyenv set KEY=value` can default to project scope."
+    );
+    println!("  Example: easyenv init");
+    match active_project {
+        Some(_) => println!(
+            "  Tip: this directory is already initialized, so plain `easyenv set KEY=value` defaults to project scope here."
+        ),
+        None => println!(
+            "  Tip: until you run `easyenv init`, plain `easyenv set KEY=value` defaults to global scope."
+        ),
+    }
+    println!();
+    println!("Step 2: store secrets");
+    println!("  Global secret:  easyenv set --global OPENAI_API_KEY=sk-...");
+    println!("  Project secret: easyenv set --project STRIPE_SECRET=whsec_...");
+    println!("  Auto scope:     easyenv set DATABASE_URL=postgres://...");
+    println!();
+    println!("Step 3: inspect what easyenv will use");
+    println!("  Masked read:    easyenv get OPENAI_API_KEY");
+    println!("  Reveal value:   easyenv get OPENAI_API_KEY --reveal");
+    println!("  Explain source: easyenv get OPENAI_API_KEY --explain");
+    println!("  List vars:      easyenv list --format json --reveal");
+    println!();
+    println!("Step 4: run commands with injected env vars");
+    println!("  Example: easyenv exec -- pnpm dev");
+    println!("  One-off shell override: easyenv exec --env NODE_ENV=development -- env");
+    println!();
+    println!("Step 5: migrate from legacy .env files");
+    println!("  Import:         easyenv import .env");
+    println!("  Import+delete:  easyenv import .env --delete");
+    println!();
+    println!("Step 6: share safely with another machine or teammate");
+    println!("  Show recipient: easyenv workspace show");
+    println!(
+        "  Create bundle:  easyenv push --to age1... --key OPENAI_API_KEY --out easyenv-share.age"
+    );
+    println!("  Import bundle:  easyenv pull easyenv-share.age --project");
+    println!();
+    println!("Step 7: health checks and shell setup");
+    println!("  Health check:   easyenv doctor");
+    println!("  Completions:    easyenv completion zsh");
+    println!();
+    println!("Fast path:");
+    println!("  1) easyenv init");
+    println!("  2) easyenv set OPENAI_API_KEY=sk-...");
+    println!("  3) easyenv exec -- your-command");
 }
 
 fn dotenv_quote(value: &str) -> String {

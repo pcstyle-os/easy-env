@@ -211,6 +211,33 @@ fn workspace_push_and_pull_roundtrip_between_two_homes() {
 }
 
 #[test]
+fn walkthrough_teaches_the_main_flow_and_supports_walktrough_alias() {
+    let temp = tempdir().unwrap();
+    let app_home = temp.path().join("app");
+    let project = temp.path().join("project");
+    fs::create_dir_all(&project).unwrap();
+
+    let mut init = easyenv();
+    apply_test_env(&mut init, &app_home);
+    init.args(["init", project.to_str().unwrap()])
+        .assert()
+        .success();
+
+    let mut walkthrough = easyenv();
+    apply_test_env(&mut walkthrough, &app_home);
+    walkthrough
+        .current_dir(&project)
+        .args(["walktrough"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("easyenv walkthrough"))
+        .stdout(predicate::str::contains("Step 1: initialize a project"))
+        .stdout(predicate::str::contains("easyenv exec -- your-command"))
+        .stdout(predicate::str::contains("easyenv push --to age1..."))
+        .stdout(predicate::str::contains("Project status:   initialized"));
+}
+
+#[test]
 fn completion_generates_scripts() {
     let temp = tempdir().unwrap();
     let app_home = temp.path().join("app");

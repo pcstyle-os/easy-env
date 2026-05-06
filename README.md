@@ -26,6 +26,7 @@ Implemented now:
 - `easyenv get`
 - `easyenv list` / `easyenv ls`
 - `easyenv exec` / `easyenv run`
+- `easyenv walkthrough` / `easyenv walktrough`
 - `easyenv import`
 - `easyenv push`
 - `easyenv pull`
@@ -141,6 +142,14 @@ Run a command with injected vars:
 ```bash
 easyenv exec -- pnpm dev
 ```
+
+Get a built-in guided tour of the product:
+
+```bash
+easyenv walkthrough
+```
+
+(`easyenv walktrough` also works as a forgiving alias.)
 
 Import an existing `.env` file into the active project and delete the source file:
 
