@@ -1,0 +1,22 @@
+[package]
+name = "easyenv-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+aes-gcm.workspace = true
+directories.workspace = true
+getrandom.workspace = true
+hex.workspace = true
+rusqlite.workspace = true
+serde.workspace = true
+sha2.workspace = true
+zeroize.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
