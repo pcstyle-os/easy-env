@@ -34,6 +34,14 @@ pub struct ShareImport {
     pub scope: Scope,
 }
 
+pub struct ExportOptions<'a> {
+    pub profile: &'a str,
+    pub keys: &'a [EnvKey],
+    pub include_all: bool,
+    pub recipients: &'a [String],
+    pub output_path: &'a Path,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 struct ShareBundle {
     version: u8,
@@ -69,19 +77,16 @@ pub fn export_bundle<S: SecretStore>(
     app: &EasyEnv<S>,
     store: &S,
     cwd: &Path,
-    profile: &str,
-    keys: &[EnvKey],
-    include_all: bool,
-    recipients: &[String],
-    output_path: &Path,
+    options: ExportOptions<'_>,
 ) -> Result<ShareExport> {
-    if recipients.is_empty() {
+    if options.recipients.is_empty() {
         bail!("provide at least one --to age recipient")
     }
 
     let sender = ensure_identity(store)?.recipient;
-    let selected = select_secrets(app, cwd, profile, keys, include_all)?;
-    let parsed_recipients = recipients
+    let selected = select_secrets(app, cwd, options.profile, options.keys, options.include_all)?;
+    let parsed_recipients = options
+        .recipients
         .iter()
         .map(|recipient| {
             recipient
@@ -93,7 +98,7 @@ pub fn export_bundle<S: SecretStore>(
     let bundle = ShareBundle {
         version: 1,
         sender,
-        profile: profile.to_string(),
+        profile: options.profile.to_string(),
         created_at: current_timestamp(),
         items: selected
             .into_iter()
@@ -107,13 +112,13 @@ pub fn export_bundle<S: SecretStore>(
 
     let plaintext = serde_json::to_vec_pretty(&bundle)?;
     let ciphertext = encrypt_armored(&parsed_recipients, &plaintext)?;
-    if let Some(parent) = output_path.parent() {
+    if let Some(parent) = options.output_path.parent() {
         fs::create_dir_all(parent)?;
     }
-    fs::write(output_path, ciphertext)?;
+    fs::write(options.output_path, ciphertext)?;
 
     Ok(ShareExport {
-        output_path: output_path.to_path_buf(),
+        output_path: options.output_path.to_path_buf(),
         item_count: bundle.items.len(),
         recipient_count: parsed_recipients.len(),
     })

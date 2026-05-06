@@ -410,9 +410,11 @@ mod tests {
     };
     use tempfile::tempdir;
 
+    type MemoryStoreValues = Arc<Mutex<HashMap<(String, String), Vec<u8>>>>;
+
     #[derive(Clone, Default)]
     struct MemoryStore {
-        values: Arc<Mutex<HashMap<(String, String), Vec<u8>>>>,
+        values: MemoryStoreValues,
     }
 
     impl SecretStore for MemoryStore {
