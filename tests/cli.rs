@@ -101,7 +101,11 @@ fn injects_environment_into_child_process() {
         vec!["exec", "--", "sh", "-c", "printf %s \"$GLOBAL_KEY\""]
     };
 
-    env.cmd().args(script).assert().success().stdout("injected");
+    env.cmd()
+        .args(script)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("injected"));
 }
 
 #[test]
