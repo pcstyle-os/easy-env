@@ -1,0 +1,22 @@
+[package]
+name = "easyenv-keychain"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+hex.workspace = true
+keyring.workspace = true
+security-framework.workspace = true
+security-framework-sys.workspace = true
+sha2.workspace = true
+zeroize.workspace = true
+
+easyenv-core = { path = "../easyenv-core" }
+
+[dev-dependencies]
+tempfile.workspace = true
