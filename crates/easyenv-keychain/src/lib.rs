@@ -13,7 +13,7 @@ impl ConfiguredSecretStore {
     pub fn from_env(paths: &AppPaths) -> Self {
         match env::var("EASYENV_SECRET_BACKEND").ok().as_deref() {
             Some("file") => Self::File(FileSecretStore::new(paths.test_secrets_dir.clone())),
-            _ => Self::Native(NativeSecretStore::default()),
+            _ => Self::Native(NativeSecretStore),
         }
     }
 }
@@ -242,10 +242,9 @@ mod platform {
             }
         }
 
-        if deleted_any || last_error.is_none() {
-            Ok(())
-        } else {
-            Err(last_error.expect("error captured above"))
+        match (deleted_any, last_error) {
+            (true, _) | (false, None) => Ok(()),
+            (false, Some(error)) => Err(error),
         }
     }
 

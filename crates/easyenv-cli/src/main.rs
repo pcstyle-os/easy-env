@@ -8,7 +8,7 @@ use easyenv_core::{
 };
 use easyenv_keychain::ConfiguredSecretStore;
 use serde_json::json;
-use share::{ensure_identity, export_bundle, import_bundle, rotate_identity};
+use share::{ExportOptions, ensure_identity, export_bundle, import_bundle, rotate_identity};
 use std::{io, path::PathBuf, process::Command};
 
 #[derive(Parser, Debug)]
@@ -245,11 +245,13 @@ fn main() -> Result<()> {
                 &app,
                 &store,
                 &cwd,
-                &args.profile,
-                &keys,
-                args.all,
-                &args.to,
-                &args.out,
+                ExportOptions {
+                    profile: &args.profile,
+                    keys: &keys,
+                    include_all: args.all,
+                    recipients: &args.to,
+                    output_path: &args.out,
+                },
             )?;
             println!(
                 "wrote encrypted share bundle {} for {} recipient(s) with {} secret(s)",
@@ -341,7 +343,7 @@ fn parse_assignment(input: String, value: Option<String>) -> Result<(EnvKey, Str
 }
 
 fn parse_keys(raw_keys: &[String]) -> Result<Vec<EnvKey>> {
-    raw_keys.iter().map(|key| EnvKey::parse(key)).collect()
+    raw_keys.iter().map(EnvKey::parse).collect()
 }
 
 fn parse_shell_override(raw: &str) -> Result<(EnvKey, String), String> {
