@@ -242,10 +242,9 @@ mod platform {
             }
         }
 
-        if deleted_any || last_error.is_none() {
-            Ok(())
-        } else {
-            Err(last_error.expect("error captured above"))
+        match (deleted_any, last_error) {
+            (true, _) | (false, None) => Ok(()),
+            (false, Some(error)) => Err(error),
         }
     }
 
