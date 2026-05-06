@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            asset_suffix: linux-x86_64
+          - os: macos-13
+            asset_suffix: macos-x86_64
+          - os: macos-14
+            asset_suffix: macos-aarch64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build release binary
+        run: cargo build --release --locked -p easyenv
+
+      - name: Package archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "dist/easyenv-${{ matrix.asset_suffix }}/docs"
+          cp target/release/easyenv "dist/easyenv-${{ matrix.asset_suffix }}/easyenv"
+          cp README.md LICENSE "dist/easyenv-${{ matrix.asset_suffix }}/"
+          cp docs/install.md "dist/easyenv-${{ matrix.asset_suffix }}/docs/install.md"
+          tar -C dist -czf "dist/easyenv-${{ matrix.asset_suffix }}.tar.gz" "easyenv-${{ matrix.asset_suffix }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: easyenv-${{ matrix.asset_suffix }}
+          path: dist/easyenv-${{ matrix.asset_suffix }}.tar.gz
+
+      - name: Publish release asset
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/easyenv-${{ matrix.asset_suffix }}.tar.gz
